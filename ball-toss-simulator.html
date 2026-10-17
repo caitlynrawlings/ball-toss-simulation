@@ -1,0 +1,565 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ball Toss Simulator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .simulation {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 20px;
+    }
+
+    /* Simulation area */
+    .scene {
+      position: relative;
+      height: 550px;
+      overflow: hidden;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      background: linear-gradient(
+        to bottom,
+        #bfdbfe,
+        #eff6ff
+      );
+    }
+
+    /* Ground */
+    .ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 55px;
+      background: #86efac;
+      border-top: 3px solid #166534;
+    }
+
+    /* Ball */
+    .ball {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background: #f97316;
+      border: 2px solid #9a3412;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+    }
+
+    /* Readout */
+    .readout {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      z-index: 10;
+    }
+
+    .height {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .time {
+      font-size: 20px;
+      margin-top: 5px;
+    }
+
+    /* Ruler */
+    .ruler {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      bottom: 55px;
+      width: 55px;
+      border-left: 4px solid #1e293b;
+      z-index: 4;
+    }
+
+    .tick {
+      position: absolute;
+      left: -4px;
+      width: 18px;
+      border-top: 2px solid #1e293b;
+    }
+
+    .tick-label {
+      position: absolute;
+      left: 24px;
+      top: -9px;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    /* Controls */
+    .controls {
+      background: white;
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    button {
+      padding: 14px;
+      font-size: 17px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #reset {
+      background: #64748b;
+    }
+
+    #reset:hover {
+      background: #475569;
+    }
+
+    .equation {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .instructions {
+      margin-top: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+    }
+
+    @media (max-width: 700px) {
+      .simulation {
+        grid-template-columns: 1fr;
+      }
+
+      .scene {
+        height: 500px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🏀 Ball Toss Simulator</h1>
+
+  <div class="simulation">
+
+    <!-- Simulation -->
+    <div class="scene" id="scene">
+
+      <div class="readout">
+        <div class="height" id="heightText">
+          Height: 5.0 ft
+        </div>
+
+        <div class="time" id="timeText">
+          Time: 0.00 s
+        </div>
+      </div>
+
+      <div class="ruler" id="ruler"></div>
+
+      <div class="ball" id="ball"></div>
+
+      <div class="ground"></div>
+
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+
+      <button id="startPause">
+        ▶ Start
+      </button>
+
+      <button id="reset">
+        ↻ Reset
+      </button>
+
+      <div class="equation">
+
+
+        <p>
+          <strong>h</strong> = height in feet<br>
+          <strong>t</strong> = time in seconds
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="instructions">
+
+    <strong>How to use:</strong>
+
+    <ul>
+      <li>Click <strong>Start</strong> to throw the ball.</li>
+      <li>Click <strong>Pause</strong> to freeze the simulation.</li>
+      <li>Click <strong>Resume</strong> to continue.</li>
+      <li>Click <strong>Reset</strong> to start over.</li>
+      <li>Watch the ball's height using the ruler and the numerical display.</li>
+    </ul>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  // -----------------------------
+  // Simulation settings
+  // -----------------------------
+
+  // y-int
+  const launchHeight = 0;
+
+  const maxHeight = 144;
+
+  // Approximate time when the ball reaches the ground (x-int)
+  const totalTime = 6;
+
+
+  // -----------------------------
+  // Get HTML elements
+  // -----------------------------
+
+  const scene = document.getElementById("scene");
+  const ball = document.getElementById("ball");
+
+  const heightText = document.getElementById("heightText");
+  const timeText = document.getElementById("timeText");
+
+  const startPauseButton =
+    document.getElementById("startPause");
+
+  const resetButton =
+    document.getElementById("reset");
+
+  const ruler =
+    document.getElementById("ruler");
+
+
+  // -----------------------------
+  // Simulation variables
+  // -----------------------------
+
+  let time = 0;
+
+  let running = false;
+
+  let animationFrame;
+
+  let previousTime = null;
+
+
+  // -----------------------------
+  // Create ruler markings
+  // -----------------------------
+
+  for (let height = 0; height <= maxHeight+10; height += 5) {
+
+    const tick = document.createElement("div");
+
+    tick.className = "tick";
+
+    const percentage =
+      (height / (maxHeight+10)) * 100;
+
+    tick.style.bottom =
+      percentage + "%";
+
+    const label =
+      document.createElement("span");
+
+    label.className = "tick-label";
+
+    label.textContent =
+      height + " ft";
+
+    tick.appendChild(label);
+
+    ruler.appendChild(tick);
+  }
+
+
+  // -----------------------------
+  // Calculate height
+  // -----------------------------
+
+  function calculateHeight(t) {
+
+    let height =
+      0 +
+      96 * t -
+      16 * t * t;
+
+    // Don't allow height below ground
+    if (height < 0) {
+      height = 0;
+    }
+
+    return height;
+  }
+
+
+  // -----------------------------
+  // Draw ball
+  // -----------------------------
+
+  function updateDisplay() {
+
+    const height =
+      calculateHeight(time);
+
+
+    // Height text
+    heightText.textContent =
+      "Height: " +
+      height.toFixed(1) +
+      " ft";
+
+
+    // Stopwatch text
+    timeText.textContent =
+      "Time: " +
+      time.toFixed(2) +
+      " s";
+
+
+    // Calculate vertical position
+    const groundHeight = 55;
+
+    const usableHeight =
+      scene.clientHeight -
+      groundHeight -
+      30;
+
+
+    const verticalPosition =
+      scene.clientHeight -
+      groundHeight -
+      (height / maxHeight) *
+      usableHeight;
+
+
+    // Horizontal starting position
+    const horizontalPosition =
+      scene.clientWidth - scene.clientWidth * 0.20;
+
+
+    ball.style.left =
+      horizontalPosition + "px";
+
+    ball.style.top =
+      verticalPosition + "px";
+  }
+
+
+  // -----------------------------
+  // Animation
+  // -----------------------------
+
+  function animate(currentTime) {
+
+    if (!running) {
+      return;
+    }
+
+
+    if (previousTime === null) {
+
+      previousTime = currentTime;
+
+    }
+
+
+    // Convert milliseconds to seconds
+
+    const deltaTime =
+      (currentTime - previousTime) / 1000;
+
+
+    previousTime =
+      currentTime;
+
+
+    // Prevent giant jumps
+    const safeDelta =
+      Math.min(deltaTime, 0.05);
+
+
+    time += safeDelta;
+
+
+    // Ball has landed
+
+    if (time >= totalTime) {
+
+  // Reset the simulation
+  time = 0;
+
+  running = false;
+
+  previousTime = null;
+
+  startPauseButton.textContent =
+    "▶ Start";
+
+  updateDisplay();
+
+  return;
+}
+
+
+    updateDisplay();
+
+
+    animationFrame =
+      requestAnimationFrame(animate);
+  }
+
+
+  // -----------------------------
+  // Start / Pause / Resume
+  // -----------------------------
+
+  startPauseButton.addEventListener(
+    "click",
+    function () {
+
+      // If simulation has finished,
+      // don't restart automatically.
+      if (time >= totalTime) {
+        return;
+      }
+
+
+      if (running) {
+
+        // Pause
+        running = false;
+
+        startPauseButton.textContent =
+          "▶ Resume";
+
+        cancelAnimationFrame(
+          animationFrame
+        );
+
+      } else {
+
+        // Start / Resume
+        running = true;
+
+        previousTime = null;
+
+        startPauseButton.textContent =
+          "Ⅱ Pause";
+
+        animationFrame =
+          requestAnimationFrame(
+            animate
+          );
+      }
+
+    }
+  );
+
+
+  // -----------------------------
+  // Reset
+  // -----------------------------
+
+  resetButton.addEventListener(
+    "click",
+    function () {
+
+      running = false;
+
+      cancelAnimationFrame(
+        animationFrame
+      );
+
+      time = 0;
+
+      previousTime = null;
+
+      startPauseButton.textContent =
+        "▶ Start";
+
+      updateDisplay();
+
+    }
+  );
+
+
+  // -----------------------------
+  // Update if window is resized
+  // -----------------------------
+
+  window.addEventListener(
+    "resize",
+    updateDisplay
+  );
+
+
+  // -----------------------------
+  // Initial display
+  // -----------------------------
+
+  updateDisplay();
+
+</script>
+
+</body>
+</html>
