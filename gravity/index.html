@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ball Toss Simulator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .simulation {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 20px;
+    }
+
+    /* Simulation area */
+    .scene {
+      position: relative;
+      height: 550px;
+      overflow: hidden;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      background: linear-gradient(
+        to bottom,
+        #bfdbfe,
+        #eff6ff
+      );
+    }
+
+    /* Ground */
+    .ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 55px;
+      background: #86efac;
+      border-top: 3px solid #166534;
+    }
+
+    /* Ball */
+    .ball {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background: #f97316;
+      border: 2px solid #9a3412;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+    }
+
+    /* Readout */
+    .readout {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      z-index: 10;
+    }
+
+    .height {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .time {
+      font-size: 20px;
+      margin-top: 5px;
+    }
+
+    .gravityDisplay {
+      font-size: 16px;
+      margin-top: 8px;
+      font-weight: bold;
+    }
+
+    /* Ruler */
+    .ruler {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      bottom: 55px;
+      width: 55px;
+      border-left: 4px solid #1e293b;
+      z-index: 4;
+    }
+
+    .tick {
+      position: absolute;
+      left: -4px;
+      width: 18px;
+      border-top: 2px solid #1e293b;
+    }
+
+    .tick-label {
+      position: absolute;
+      left: 24px;
+      top: -9px;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    /* Controls */
+    .controls {
+      background: white;
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    select,
+    input {
+      padding: 11px;
+      font-size: 16px;
+      border: 1px solid #94a3b8;
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    button {
+      padding: 14px;
+      font-size: 17px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #reset {
+      background: #64748b;
+    }
+
+    #reset:hover {
+      background: #475569;
+    }
+
+    .customGravity {
+      display: none;
+    }
+
+    .equation {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .instructions {
+      margin-top: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+    }
+
+    @media (max-width: 700px) {
+      .simulation {
+        grid-template-columns: 1fr;
+      }
+
+      .scene {
+        height: 500px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🏀 Ball Toss Simulator</h1>
+
+  <div class="simulation">
+
+    <!-- Simulation -->
+    <div class="scene" id="scene">
+
+      <div class="readout">
+
+        <div class="height" id="heightText">
+          Height: 5.0 ft
+        </div>
+
+        <div class="time" id="timeText">
+          Time: 0.00 s
+        </div>
+
+        <div class="gravityDisplay" id="gravityText">
+          Gravity: Earth — 32.17 ft/s²
+        </div>
+
+      </div>
+
+      <div class="ruler" id="ruler"></div>
+
+      <div class="ball" id="ball"></div>
+
+      <div class="ground"></div>
+
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+
+      <label for="gravitySelect">
+        Choose Gravity:
+      </label>
+
+      <select id="gravitySelect">
+
+        <option value="32.17">
+          🌎 Earth — 32.17 ft/s²
+        </option>
+
+        <option value="5.31">
+          🌙 Moon — 5.31 ft/s²
+        </option>
+
+        <option value="12.17">
+          🔴 Mars — 12.17 ft/s²
+        </option>
+
+        <option value="81.33">
+          🟠 Jupiter — 81.33 ft/s²
+        </option>
+
+        <option value="12.14">
+          ☿ Mercury — 12.14 ft/s²
+        </option>
+
+        <option value="29.10">
+          ♀ Venus — 29.10 ft/s²
+        </option>
+
+        <option value="34.25">
+          🪐 Saturn — 34.25 ft/s²
+        </option>
+
+        <option value="28.51">
+          🌀 Uranus — 28.51 ft/s²
+        </option>
+
+        <option value="36.58">
+          🔵 Neptune — 36.58 ft/s²
+        </option>
+
+        <option value="custom">
+          ✏️ Custom Gravity
+        </option>
+
+      </select>
+
+
+      <div class="customGravity" id="customGravityBox">
+
+        <label for="customGravity">
+          Custom Gravity (ft/s²):
+        </label>
+
+        <input
+          type="number"
+          id="customGravity"
+          value="32.17"
+          min="0"
+          step="0.01"
+        >
+
+      </div>
+
+
+      <button id="startPause">
+        ▶ Start
+      </button>
+
+      <button id="reset">
+        ↻ Reset
+      </button>
+
+
+      <div class="equation">
+
+        <strong>Function:</strong>
+
+        <p id="equationText">
+          h(t) = 96t − 16.085t²
+        </p>
+
+        <p>
+          <strong>h</strong> = height in feet<br>
+          <strong>t</strong> = time in seconds
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="instructions">
+
+    <strong>How to use:</strong>
+
+    <ul>
+
+      <li>
+        Choose a planet or moon from the gravity menu.
+      </li>
+
+      <li>
+        Choose <strong>Custom Gravity</strong> to enter your own gravity.
+      </li>
+
+      <li>
+        Click <strong>Start</strong> to throw the ball.
+      </li>
+
+      <li>
+        Click <strong>Pause</strong> to freeze the simulation.
+      </li>
+
+      <li>
+        Click <strong>Resume</strong> to continue.
+      </li>
+
+      <li>
+        Click <strong>Reset</strong> to start over.
+      </li>
+
+      <li>
+        Watch the ball's height using the ruler and numerical display.
+      </li>
+
+    </ul>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  // -----------------------------
+  // Simulation settings
+  // -----------------------------
+
+  // Starting height
+  const launchHeight = 0;
+
+  // Initial upward velocity in ft/s
+  const initialVelocity = 96;
+
+  // Maximum height shown on ruler
+  const maxHeight = 144;
+
+
+  // -----------------------------
+  // Get HTML elements
+  // -----------------------------
+
+  const scene =
+    document.getElementById("scene");
+
+  const ball =
+    document.getElementById("ball");
+
+  const heightText =
+    document.getElementById("heightText");
+
+  const timeText =
+    document.getElementById("timeText");
+
+  const gravityText =
+    document.getElementById("gravityText");
+
+  const equationText =
+    document.getElementById("equationText");
+
+  const startPauseButton =
+    document.getElementById("startPause");
+
+  const resetButton =
+    document.getElementById("reset");
+
+  const ruler =
+    document.getElementById("ruler");
+
+  const gravitySelect =
+    document.getElementById("gravitySelect");
+
+  const customGravityBox =
+    document.getElementById("customGravityBox");
+
+  const customGravity =
+    document.getElementById("customGravity");
+
+
+  // -----------------------------
+  // Gravity names
+  // -----------------------------
+
+  const gravityNames = {
+
+    "32.17": "Earth",
+
+    "5.31": "Moon",
+
+    "12.17": "Mars",
+
+    "81.33": "Jupiter",
+
+    "12.14": "Mercury",
+
+    "29.10": "Venus",
+
+    "34.25": "Saturn",
+
+    "28.51": "Uranus",
+
+    "36.58": "Neptune"
+
+  };
+
+
+  // -----------------------------
+  // Simulation variables
+  // -----------------------------
+
+  let time = 0;
+
+  let running = false;
+
+  let animationFrame;
+
+  let previousTime = null;
+
+
+  // -----------------------------
+  // Get current gravity
+  // -----------------------------
+
+  function getGravity() {
+
+    if (gravitySelect.value === "custom") {
+
+      let value =
+        parseFloat(customGravity.value);
+
+      if (isNaN(value) || value < 0) {
+        return 32.17;
+      }
+
+      return value;
+
+    }
+
+    return parseFloat(gravitySelect.value);
+
+  }
+
+
+  // -----------------------------
+  // Get gravity name
+  // -----------------------------
+
+  function getGravityName() {
+
+    if (gravitySelect.value === "custom") {
+
+      return "Custom";
+
+    }
+
+    return gravityNames[gravitySelect.value];
+
+  }
+
+
+  // -----------------------------
+  // Update gravity information
+  // -----------------------------
+
+  function updateGravityInfo() {
+
+    const gravity =
+      getGravity();
+
+    const name =
+      getGravityName();
+
+    gravityText.textContent =
+      "Gravity: " +
+      name +
+      " — " +
+      gravity.toFixed(2) +
+      " ft/s²";
+
+
+    // Calculate 1/2 gravity for equation
+
+    const halfGravity =
+      gravity / 2;
+
+
+    equationText.textContent =
+      "h(t) = 96t − " +
+      halfGravity.toFixed(3) +
+      "t²";
+
+  }
+
+
+  // -----------------------------
+  // Create ruler markings
+  // -----------------------------
+
+  for (
+    let height = 0;
+    height <= maxHeight + 10;
+    height += 5
+  ) {
+
+    const tick =
+      document.createElement("div");
+
+    tick.className = "tick";
+
+    const percentage =
+      (height / (maxHeight + 10)) * 100;
+
+    tick.style.bottom =
+      percentage + "%";
+
+    const label =
+      document.createElement("span");
+
+    label.className =
+      "tick-label";
+
+    label.textContent =
+      height + " ft";
+
+    tick.appendChild(label);
+
+    ruler.appendChild(tick);
+
+  }
+
+
+  // -----------------------------
+  // Calculate height
+  // -----------------------------
+
+  function calculateHeight(t) {
+
+    const gravity =
+      getGravity();
+
+    let height =
+      launchHeight +
+      initialVelocity * t -
+      0.5 * gravity * t * t;
+
+
+    // Don't allow height below ground
+
+    if (height < 0) {
+
+      height = 0;
+
+    }
+
+
+    return height;
+
+  }
+
+
+  // -----------------------------
+  // Calculate landing time
+  // -----------------------------
+
+  function getLandingTime() {
+
+    const gravity =
+      getGravity();
+
+
+    // Solve:
+    //
+    // 0 = 96t - 1/2(g)t²
+    //
+    // t = 2v/g
+
+    if (gravity <= 0) {
+
+      return Infinity;
+
+    }
+
+    return (
+      2 * initialVelocity / gravity
+    );
+
+  }
+
+
+  // -----------------------------
+  // Draw ball
+  // -----------------------------
+
+  function updateDisplay() {
+
+    const height =
+      calculateHeight(time);
+
+
+    // Height text
+
+    heightText.textContent =
+      "Height: " +
+      height.toFixed(1) +
+      " ft";
+
+
+    // Stopwatch text
+
+    timeText.textContent =
+      "Time: " +
+      time.toFixed(2) +
+      " s";
+
+
+    // Calculate vertical position
+
+    const groundHeight = 55;
+
+    const usableHeight =
+      scene.clientHeight -
+      groundHeight -
+      30;
+
+
+    const verticalPosition =
+      scene.clientHeight -
+      groundHeight -
+      (height / maxHeight) *
+      usableHeight;
+
+
+    // Horizontal starting position
+
+    const horizontalPosition =
+      scene.clientWidth -
+      scene.clientWidth * 0.20;
+
+
+    ball.style.left =
+      horizontalPosition + "px";
+
+    ball.style.top =
+      verticalPosition + "px";
+
+  }
+
+
+  // -----------------------------
+  // Animation
+  // -----------------------------
+
+  function animate(currentTime) {
+
+    if (!running) {
+
+      return;
+
+    }
+
+
+    if (previousTime === null) {
+
+      previousTime =
+        currentTime;
+
+    }
+
+
+    // Convert milliseconds to seconds
+
+    const deltaTime =
+      (currentTime - previousTime) / 1000;
+
+
+    previousTime =
+      currentTime;
+
+
+    // Prevent giant jumps
+
+    const safeDelta =
+      Math.min(deltaTime, 0.05);
+
+
+    time += safeDelta;
+
+
+    // Calculate landing time
+
+    const totalTime =
+      getLandingTime();
+
+
+    // Ball has landed
+
+    if (time >= totalTime) {
+
+      time = totalTime;
+
+      running = false;
+
+      previousTime = null;
+
+      startPauseButton.textContent =
+        "▶ Start";
+
+      updateDisplay();
+
+      return;
+
+    }
+
+
+    updateDisplay();
+
+
+    animationFrame =
+      requestAnimationFrame(animate);
+
+  }
+
+
+  // -----------------------------
+  // Start / Pause / Resume
+  // -----------------------------
+
+  startPauseButton.addEventListener(
+    "click",
+    function () {
+
+      // If simulation has finished,
+      // don't restart automatically.
+
+      if (time >= getLandingTime()) {
+
+        return;
+
+      }
+
+
+      if (running) {
+
+        // Pause
+
+        running = false;
+
+        startPauseButton.textContent =
+          "▶ Resume";
+
+        cancelAnimationFrame(
+          animationFrame
+        );
+
+      }
+
+      else {
+
+        // Start / Resume
+
+        running = true;
+
+        previousTime = null;
+
+        startPauseButton.textContent =
+          "Ⅱ Pause";
+
+        animationFrame =
+          requestAnimationFrame(
+            animate
+          );
+
+      }
+
+    }
+  );
+
+
+  // -----------------------------
+  // Reset
+  // -----------------------------
+
+  resetButton.addEventListener(
+    "click",
+    function () {
+
+      running = false;
+
+      cancelAnimationFrame(
+        animationFrame
+      );
+
+      time = 0;
+
+      previousTime = null;
+
+      startPauseButton.textContent =
+        "▶ Start";
+
+      updateDisplay();
+
+    }
+  );
+
+
+  // -----------------------------
+  // Gravity selection
+  // -----------------------------
+
+  gravitySelect.addEventListener(
+    "change",
+    function () {
+
+      // Show custom input
+
+      if (gravitySelect.value === "custom") {
+
+        customGravityBox.style.display =
+          "block";
+
+      }
+
+      else {
+
+        customGravityBox.style.display =
+          "none";
+
+      }
+
+
+      // Reset simulation when gravity changes
+
+      running = false;
+
+      cancelAnimationFrame(
+        animationFrame
+      );
+
+      time = 0;
+
+      previousTime = null;
+
+      startPauseButton.textContent =
+        "▶ Start";
+
+
+      updateGravityInfo();
+
+      updateDisplay();
+
+    }
+  );
+
+
+  // -----------------------------
+  // Custom gravity changes
+  // -----------------------------
+
+  customGravity.addEventListener(
+    "input",
+    function () {
+
+      if (gravitySelect.value === "custom") {
+
+        updateGravityInfo();
+
+        updateDisplay();
+
+      }
+
+    }
+  );
+
+
+  // -----------------------------
+  // Update if window is resized
+  // -----------------------------
+
+  window.addEventListener(
+    "resize",
+    updateDisplay
+  );
+
+
+  // -----------------------------
+  // Initial display
+  // -----------------------------
+
+  updateGravityInfo();
+
+  updateDisplay();
+
+</script>
+
+</body>
+</html>
