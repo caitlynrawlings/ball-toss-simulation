@@ -228,7 +228,7 @@
         </div>
 
         <div class="gravityDisplay" id="gravityText">
-          Gravity: Earth — 32.2 ft/s²
+          Gravity: Earth — 32.1 ft/s²
         </div>
 
       </div>
@@ -756,18 +756,20 @@
 
     if (time >= totalTime) {
 
-      time = totalTime;
-
-      running = false;
-
-      previousTime = null;
-
-      startPauseButton.textContent =
-        "▶ Start";
-
-      updateDisplay();
-
-      return;
+       // Reset the simulation
+        time = 0;
+      
+        running = false;
+      
+        previousTime = null;
+      
+        startPauseButton.textContent =
+          "▶ Start";
+      
+        updateDisplay();
+      
+        return;
+      }
 
     }
 
