@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Gravity Data Plotter</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        color: #222;
+    }
+
+    .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 25px;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #555;
+        margin-bottom: 25px;
+    }
+
+    .controls {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .control-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: end;
+    }
+
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .input-group label {
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    input {
+        width: 120px;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+    }
+
+    button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .update-btn {
+        background: #2563eb;
+        color: white;
+    }
+
+    .update-btn:hover {
+        background: #1d4ed8;
+    }
+
+    .clear-btn {
+        background: #dc2626;
+        color: white;
+    }
+
+    .clear-btn:hover {
+        background: #b91c1c;
+    }
+
+    .plot-btn {
+        background: #16a34a;
+        color: white;
+    }
+
+    .plot-btn:hover {
+        background: #15803d;
+    }
+
+    .instructions {
+        background: #e8f1ff;
+        border-left: 5px solid #2563eb;
+        padding: 12px 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+
+    .graph-card {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+	flex-grow: 1;
+    }
+
+    #graph {
+        width: 100%;
+        height: auto;
+        display: block;
+        cursor: crosshair;
+    }
+
+    .coordinate-display {
+        text-align: center;
+        font-weight: bold;
+        font-size: 17px;
+        margin-top: 8px;
+        min-height: 25px;
+    }
+
+    .point-entry {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+
+    .entry-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 12px;
+    }
+
+.graph-settings-contatiner {
+    display: flex;
+    flex-direction: row;
+align-items: center;
+    gap: 20px;
+}
+
+.entering-things {
+    display: flex;
+    flex-direction: column;
+}
+
+    .points-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    .points-table th,
+    .points-table td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+
+    .points-table th {
+        background: #f1f5f9;
+    }
+
+    .remove-btn {
+        background: #f87171;
+        color: white;
+        padding: 5px 10px;
+        font-size: 13px;
+    }
+
+    .remove-btn:hover {
+        background: #dc2626;
+    }
+
+    .empty-message {
+        color: #777;
+        text-align: center;
+        padding: 15px;
+    }
+
+    @media (max-width: 700px) {
+        .container {
+            padding: 10px;
+        }
+
+        .control-row,
+        .entry-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        input,
+        button {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📊 Gravity Data Plotter</h1>
+
+    <div class="subtitle">
+        Plot your time and height data on the graph.
+    </div>
+
+    <div class="instructions">
+        <strong>How to use:</strong>
+        Hover over the graph to see the coordinates.
+        Click on the graph to add a point, or enter an exact coordinate below.
+    </div>
+
+    
+<div class="graph-settings-contatiner">
+
+    <!-- GRAPH -->
+    <div class="graph-card">
+
+        <svg
+            id="graph"
+            viewBox="0 0 800 850"
+            xmlns="http://www.w3.org/2000/svg">
+
+            <!-- Background -->
+            <rect
+                x="0"
+                y="0"
+                width="800"
+                height="850"
+                fill="white"
+            />
+
+            <!-- Grid -->
+            <g id="grid"></g>
+
+            <!-- Axes -->
+            <line
+                id="xAxis"
+                stroke="black"
+                stroke-width="3"
+            />
+
+            <line
+                id="yAxis"
+                stroke="black"
+                stroke-width="3"
+            />
+
+            <!-- Labels -->
+            <g
+                id="xLabels"
+                font-family="Arial"
+                font-size="16"
+                fill="black"
+                text-anchor="middle">
+            </g>
+
+            <g
+                id="yLabels"
+                font-family="Arial"
+                font-size="15"
+                fill="black"
+                text-anchor="end">
+            </g>
+
+            <!-- Axis titles -->
+            <text
+                x="430"
+                y="815"
+                font-family="Arial"
+                font-size="18"
+                font-weight="bold"
+                text-anchor="middle">
+                Time (seconds)
+            </text>
+
+            <text
+                x="20"
+                y="390"
+                font-family="Arial"
+                font-size="18"
+                font-weight="bold"
+                text-anchor="middle"
+                transform="rotate(-90 20 390)">
+                Height (feet)
+            </text>
+
+            <!-- Hover indicator -->
+            <circle
+                id="hoverPoint"
+                r="6"
+                fill="#2563eb"
+                opacity="0.5"
+                visibility="hidden"
+            />
+
+            <!-- Student points -->
+            <g id="points"></g>
+
+        </svg>
+
+        <div
+            id="coordinateDisplay"
+            class="coordinate-display">
+            Move your mouse over the graph.
+        </div>
+
+    </div>
+
+<div class="entering-things">
+
+    <!-- MANUAL POINT ENTRY -->
+    <div class="point-entry">
+
+        <h2>Enter an Exact Point</h2>
+
+        <div class="entry-row">
+
+            <div class="input-group">
+                <label for="pointX">Time (x)</label>
+                <input
+                    type="number"
+                    id="pointX"
+                    step="any"
+                    placeholder="Example: 2"
+                >
+            </div>
+
+            <div class="input-group">
+                <label for="pointY">Height (y)</label>
+                <input
+                    type="number"
+                    id="pointY"
+                    step="any"
+                    placeholder="Example: 128"
+                >
+            </div>
+
+            <button
+                class="plot-btn"
+                onclick="plotManualPoint()">
+                Plot Point
+            </button>
+
+            <button
+                class="clear-btn"
+                onclick="clearPoints()">
+                Clear All Points
+            </button>
+
+        </div>
+
+    </div>
+
+<!-- GRAPH SETTINGS -->
+    <div class="controls">
+
+        <h2>Graph Settings</h2>
+
+        <div class="control-row">
+
+            <div class="input-group">
+                <label for="maxX">Maximum Time (seconds)</label>
+                <input
+                    type="number"
+                    id="maxX"
+                    value="10"
+                    min="1"
+                    max="1000"
+                >
+            </div>
+
+            <div class="input-group">
+                <label for="maxY">Maximum Height (feet)</label>
+                <input
+                    type="number"
+                    id="maxY"
+                    value="150"
+                    min="1"
+                    max="5000"
+                >
+            </div>
+
+            <button
+                class="update-btn"
+                onclick="updateGraph()">
+                Update Graph
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+    <!-- POINT TABLE -->
+    <div class="point-entry">
+
+        <h2>Your Points</h2>
+
+        <table class="points-table">
+
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Time (seconds)</th>
+                    <th>Height (feet)</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+
+            <tbody id="pointsTableBody">
+            </tbody>
+
+        </table>
+
+        <div
+            id="emptyMessage"
+            class="empty-message">
+            No points plotted yet.
+        </div>
+
+    </div>
+
+</div> 
+
+<script>
+
+    // --------------------------------------------------
+    // GRAPH SETTINGS
+    // --------------------------------------------------
+
+    const svg = document.getElementById("graph");
+
+    const graphLeft = 80;
+    const graphTop = 40;
+    const graphWidth = 700;
+    const graphHeight = 700;
+
+    let maxX = 10;
+    let maxY = 150;
+
+    let points = [];
+
+
+    // --------------------------------------------------
+    // CONVERT COORDINATES
+    // --------------------------------------------------
+
+    function xToSvg(x) {
+        return graphLeft + (x / maxX) * graphWidth;
+    }
+
+    function yToSvg(y) {
+        return graphTop + graphHeight - (y / maxY) * graphHeight;
+    }
+
+    function svgToX(svgX) {
+        return ((svgX - graphLeft) / graphWidth) * maxX;
+    }
+
+    function svgToY(svgY) {
+        return ((graphTop + graphHeight - svgY) / graphHeight) * maxY;
+    }
+
+
+    // --------------------------------------------------
+    // DRAW GRAPH
+    // --------------------------------------------------
+
+    function drawGraph() {
+
+        const grid = document.getElementById("grid");
+        const xLabels = document.getElementById("xLabels");
+        const yLabels = document.getElementById("yLabels");
+
+        grid.innerHTML = "";
+        xLabels.innerHTML = "";
+        yLabels.innerHTML = "";
+
+        // ----------------------------------------------
+        // X GRID
+        // ----------------------------------------------
+
+        // Always use 10 major sections.
+        const xSections = 10;
+
+        for (let i = 0; i <= xSections; i++) {
+
+            const x = graphLeft +
+                (i / xSections) * graphWidth;
+
+            const line = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "line"
+            );
+
+            line.setAttribute("x1", x);
+            line.setAttribute("y1", graphTop);
+            line.setAttribute("x2", x);
+            line.setAttribute(
+                "y2",
+                graphTop + graphHeight
+            );
+
+            line.setAttribute("stroke", "#aaaaaa");
+            line.setAttribute("stroke-width", "1");
+
+            grid.appendChild(line);
+
+
+            // Label
+            const label = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "text"
+            );
+
+            label.setAttribute("x", x);
+            label.setAttribute("y", 765);
+
+            label.textContent =
+                formatNumber(
+                    (i / xSections) * maxX
+                );
+
+            xLabels.appendChild(label);
+        }
+
+
+        // ----------------------------------------------
+        // Y GRID
+        // ----------------------------------------------
+
+        const ySections = 15;
+
+        for (let i = 0; i <= ySections; i++) {
+
+            const y = graphTop +
+                graphHeight -
+                (i / ySections) * graphHeight;
+
+            const line = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "line"
+            );
+
+            line.setAttribute("x1", graphLeft);
+            line.setAttribute("y1", y);
+            line.setAttribute("x2", graphLeft + graphWidth);
+            line.setAttribute("y2", y);
+
+            line.setAttribute(
+                "stroke",
+                i % 1 === 0 ? "#dddddd" : "#eeeeee"
+            );
+
+            line.setAttribute(
+                "stroke-width",
+                i % 5 === 0 ? "1.5" : "1"
+            );
+
+            grid.appendChild(line);
+
+
+            // Label every major section
+            const label = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "text"
+            );
+
+            label.setAttribute("x", 70);
+            label.setAttribute("y", y + 5);
+
+            label.textContent =
+                formatNumber(
+                    (i / ySections) * maxY
+                );
+
+            yLabels.appendChild(label);
+        }
+
+
+        // ----------------------------------------------
+        // AXES
+        // ----------------------------------------------
+
+        const xAxis = document.getElementById("xAxis");
+        const yAxis = document.getElementById("yAxis");
+
+        xAxis.setAttribute("x1", graphLeft);
+        xAxis.setAttribute(
+            "y1",
+            graphTop + graphHeight
+        );
+        xAxis.setAttribute(
+            "x2",
+            graphLeft + graphWidth
+        );
+        xAxis.setAttribute(
+            "y2",
+            graphTop + graphHeight
+        );
+
+        yAxis.setAttribute("x1", graphLeft);
+        yAxis.setAttribute("y1", graphTop);
+        yAxis.setAttribute("x2", graphLeft);
+        yAxis.setAttribute(
+            "y2",
+            graphTop + graphHeight
+        );
+
+
+        // Redraw points in their correct locations
+        drawPoints();
+    }
+
+
+    // --------------------------------------------------
+    // FORMAT NUMBERS
+    // --------------------------------------------------
+
+    function formatNumber(number) {
+
+        if (Number.isInteger(number)) {
+            return number;
+        }
+
+        return Number(number.toFixed(2));
+    }
+
+
+    // --------------------------------------------------
+    // GET MOUSE POSITION
+    // --------------------------------------------------
+
+    function getSVGPoint(event) {
+
+        const rect = svg.getBoundingClientRect();
+
+        const scaleX = 800 / rect.width;
+        const scaleY = 850 / rect.height;
+
+        return {
+            x: (event.clientX - rect.left) * scaleX,
+            y: (event.clientY - rect.top) * scaleY
+        };
+    }
+
+
+    // --------------------------------------------------
+    // HOVER
+    // --------------------------------------------------
+
+    svg.addEventListener("mousemove", function(event) {
+
+        const position = getSVGPoint(event);
+
+        // Make sure mouse is inside graph
+        if (
+            position.x < graphLeft ||
+            position.x > graphLeft + graphWidth ||
+            position.y < graphTop ||
+            position.y > graphTop + graphHeight
+        ) {
+
+            document.getElementById(
+                "hoverPoint"
+            ).setAttribute(
+                "visibility",
+                "hidden"
+            );
+
+            document.getElementById(
+                "coordinateDisplay"
+            ).textContent =
+                "Move your mouse over the graph.";
+
+            return;
+        }
+
+
+        let x = svgToX(position.x);
+        let y = svgToY(position.y);
+
+
+        // Round to nearest whole number
+        x = Math.round(x);
+        y = Math.round(y);
+
+
+        // Keep values within graph
+        x = Math.max(0, Math.min(maxX, x));
+        y = Math.max(0, Math.min(maxY, y));
+
+
+        const hoverPoint =
+            document.getElementById("hoverPoint");
+
+        hoverPoint.setAttribute(
+            "cx",
+            xToSvg(x)
+        );
+
+        hoverPoint.setAttribute(
+            "cy",
+            yToSvg(y)
+        );
+
+        hoverPoint.setAttribute(
+            "visibility",
+            "visible"
+        );
+
+
+        document.getElementById(
+            "coordinateDisplay"
+        ).textContent =
+            `Coordinates: (${x}, ${y})`;
+    });
+
+
+    // --------------------------------------------------
+    // CLICK GRAPH TO ADD POINT
+    // --------------------------------------------------
+
+    svg.addEventListener("click", function(event) {
+
+        const position = getSVGPoint(event);
+
+        if (
+            position.x < graphLeft ||
+            position.x > graphLeft + graphWidth ||
+            position.y < graphTop ||
+            position.y > graphTop + graphHeight
+        ) {
+            return;
+        }
+
+
+        let x = svgToX(position.x);
+        let y = svgToY(position.y);
+
+
+        // Snap to nearest whole number
+        x = Math.round(x);
+        y = Math.round(y);
+
+
+        x = Math.max(0, Math.min(maxX, x));
+        y = Math.max(0, Math.min(maxY, y));
+
+
+        addPoint(x, y);
+    });
+
+
+    // --------------------------------------------------
+    // ADD POINT
+    // --------------------------------------------------
+
+    function addPoint(x, y) {
+
+        // Prevent duplicate points
+        const duplicate = points.some(
+            point =>
+                point.x === x &&
+                point.y === y
+        );
+
+        if (duplicate) {
+            return;
+        }
+
+
+        points.push({
+            x: x,
+            y: y
+        });
+
+
+        drawPoints();
+        updateTable();
+    }
+
+
+    // --------------------------------------------------
+    // MANUAL POINT
+    // --------------------------------------------------
+
+    function plotManualPoint() {
+
+        let x = parseFloat(
+            document.getElementById("pointX").value
+        );
+
+        let y = parseFloat(
+            document.getElementById("pointY").value
+        );
+
+
+        if (isNaN(x) || isNaN(y)) {
+            alert("Please enter both an x and y value.");
+            return;
+        }
+
+
+        if (x < 0 || x > maxX) {
+            alert(
+                `Time must be between 0 and ${maxX}.`
+            );
+            return;
+        }
+
+
+        if (y < 0 || y > maxY) {
+            alert(
+                `Height must be between 0 and ${maxY}.`
+            );
+            return;
+        }
+
+
+        addPoint(x, y);
+
+
+        document.getElementById("pointX").value = "";
+        document.getElementById("pointY").value = "";
+    }
+
+
+    // --------------------------------------------------
+    // DRAW POINTS
+    // --------------------------------------------------
+
+    function drawPoints() {
+
+        const pointsGroup =
+            document.getElementById("points");
+
+        pointsGroup.innerHTML = "";
+
+
+        points.forEach((point, index) => {
+
+            const circle =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "circle"
+                );
+
+            circle.setAttribute(
+                "cx",
+                xToSvg(point.x)
+            );
+
+            circle.setAttribute(
+                "cy",
+                yToSvg(point.y)
+            );
+
+            circle.setAttribute("r", "7");
+
+            circle.setAttribute(
+                "fill",
+                "#dc2626"
+            );
+
+            circle.setAttribute(
+                "stroke",
+                "white"
+            );
+
+            circle.setAttribute(
+                "stroke-width",
+                "2"
+            );
+
+
+            // Tooltip
+            const title =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "title"
+                );
+
+            title.textContent =
+                `(${point.x}, ${point.y})`;
+
+            circle.appendChild(title);
+
+
+            pointsGroup.appendChild(circle);
+        });
+    }
+
+
+    // --------------------------------------------------
+    // UPDATE TABLE
+    // --------------------------------------------------
+
+    function updateTable() {
+
+        const tableBody =
+            document.getElementById(
+                "pointsTableBody"
+            );
+
+        const emptyMessage =
+            document.getElementById(
+                "emptyMessage"
+            );
+
+        tableBody.innerHTML = "";
+
+
+        if (points.length === 0) {
+
+            emptyMessage.style.display = "block";
+
+            return;
+        }
+
+
+        emptyMessage.style.display = "none";
+
+
+        points.forEach((point, index) => {
+
+            const row =
+                document.createElement("tr");
+
+
+            row.innerHTML = `
+                <td>${index + 1}</td>
+
+                <td>${point.x}</td>
+
+                <td>${point.y}</td>
+
+                <td>
+                    <button
+                        class="remove-btn"
+                        onclick="removePoint(${index})">
+                        Remove
+                    </button>
+                </td>
+            `;
+
+
+            tableBody.appendChild(row);
+        });
+    }
+
+
+    // --------------------------------------------------
+    // REMOVE POINT
+    // --------------------------------------------------
+
+    function removePoint(index) {
+
+        points.splice(index, 1);
+
+        drawPoints();
+        updateTable();
+    }
+
+
+    // --------------------------------------------------
+    // CLEAR ALL POINTS
+    // --------------------------------------------------
+
+    function clearPoints() {
+
+        if (points.length === 0) {
+            return;
+        }
+
+
+        if (
+            confirm(
+                "Are you sure you want to remove all points?"
+            )
+        ) {
+
+            points = [];
+
+            drawPoints();
+            updateTable();
+        }
+    }
+
+
+    // --------------------------------------------------
+    // UPDATE GRAPH RANGE
+    // --------------------------------------------------
+
+    function updateGraph() {
+
+        const newMaxX =
+            parseFloat(
+                document.getElementById("maxX").value
+            );
+
+        const newMaxY =
+            parseFloat(
+                document.getElementById("maxY").value
+            );
+
+
+        if (
+            isNaN(newMaxX) ||
+            isNaN(newMaxY) ||
+            newMaxX <= 0 ||
+            newMaxY <= 0
+        ) {
+
+            alert(
+                "Please enter positive numbers for both graph maximums."
+            );
+
+            return;
+        }
+
+
+        maxX = newMaxX;
+        maxY = newMaxY;
+
+
+        // Remove points that are now outside graph
+        points = points.filter(
+            point =>
+                point.x <= maxX &&
+                point.y <= maxY
+        );
+
+
+        drawGraph();
+        updateTable();
+    }
+
+
+    // --------------------------------------------------
+    // INITIAL GRAPH
+    // --------------------------------------------------
+
+    drawGraph();
+    updateTable();
+
+</script>
+
+</body>
+</html>
